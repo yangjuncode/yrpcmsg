@@ -1,0 +1,16 @@
+{
+  "name": "yrpcmsg",
+  "version": "1.0.0",
+  "description": "yrpc msg",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "repository": "git@github.com:yangjuncode/yrpcmsg.git",
+  "author": "yangjun <290968698@qq.com>",
+  "license": "MIT",
+  "scripts": {
+    "build": "./build.sh "
+  },
+  "dependencies": {
+    "protobufjs": "^6.8.8"
+  }
+}
