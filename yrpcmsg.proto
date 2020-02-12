@@ -1,5 +1,5 @@
 syntax = "proto3";
-package yrpc;
+package yrpcmsg;
 
 option optimize_for = LITE_RUNTIME;
 
