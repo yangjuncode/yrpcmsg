@@ -3,6 +3,8 @@ package yrpc;
 
 option optimize_for = LITE_RUNTIME;
 
+option go_package = "github.com/yangjuncode/yrpcmsg";
+
 //系统中所有的消息交互底层都以此为包装
 message Ymsg {
 
