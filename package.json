@@ -1,6 +1,6 @@
 {
   "name": "yrpcmsg",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "yrpc msg",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
