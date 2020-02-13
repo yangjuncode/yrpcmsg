@@ -8,8 +8,7 @@
   "author": "yangjun <290968698@qq.com>",
   "license": "MIT",
   "scripts": {
-    "build": "./build.sh ",
-    "publish": "yarn publish"
+    "build": "./build.sh "
   },
   "dependencies": {
     "protobufjs": "^6.8.8"
