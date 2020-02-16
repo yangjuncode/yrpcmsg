@@ -9,6 +9,9 @@
 
 	It has these top-level messages:
 		Ymsg
+		MetaItem
+		Meta
+		GrpcMeta
 		Yempty
 		Ynocare
 		UnixTime
@@ -40,29 +43,29 @@ type Ymsg struct {
 	// 整个rpc msg的长度，不包含此字段
 	// 虽然这个长度可以很长，但是为了避免大包阻塞其它操作，通常都要限制长度,采用分包多发机制
 	// 当使用基于包的传输通道时(udp/kcp/websocket)，此值可能为0(此时长度为收到的整个包的长度)
-	Len uint32 `protobuf:"fixed32,1,opt,name=len,proto3" json:"len,omitempty"`
+	Len uint32 `protobuf:"fixed32,1,opt,name=Len,proto3" json:"Len,omitempty"`
 	// rpc command,rpc的命令和option
 	// b15-b0(uint16):低16为rpc命令
 	// b19-b16:body压缩方式 0:无压缩 1:lz4 2:zlib inflate/deflate
 	// b23-b20:optbin压缩方式 0:无压缩 1:lz4 2:zlib inflate/deflate
 	// b31-b24: not used
-	Cmd uint32 `protobuf:"fixed32,2,opt,name=cmd,proto3" json:"cmd,omitempty"`
+	Cmd uint32 `protobuf:"fixed32,2,opt,name=Cmd,proto3" json:"Cmd,omitempty"`
 	// session id，登录后一定会有,用于后台区分不同的用户请求
-	Sid []byte `protobuf:"bytes,3,opt,name=sid,proto3" json:"sid,omitempty"`
+	Sid []byte `protobuf:"bytes,3,opt,name=Sid,proto3" json:"Sid,omitempty"`
 	// rpc call id,给分辨不同的rpc调用使用,调用方增1循环使用
-	Cid uint32 `protobuf:"varint,4,opt,name=cid,proto3" json:"cid,omitempty"`
+	Cid uint32 `protobuf:"varint,4,opt,name=Cid,proto3" json:"Cid,omitempty"`
 	// rpc no,从0开始增1使用,用于区分收到重复的包,特别是udp的情况下
-	No uint32 `protobuf:"varint,5,opt,name=no,proto3" json:"no,omitempty"`
+	No uint32 `protobuf:"varint,5,opt,name=No,proto3" json:"No,omitempty"`
 	// response code
-	Res int32 `protobuf:"zigzag32,9,opt,name=res,proto3" json:"res,omitempty"`
+	Res int32 `protobuf:"zigzag32,9,opt,name=Res,proto3" json:"Res,omitempty"`
 	// msg body
-	Body []byte `protobuf:"bytes,10,opt,name=body,proto3" json:"body,omitempty"`
+	Body []byte `protobuf:"bytes,10,opt,name=Body,proto3" json:"Body,omitempty"`
 	// optional str parameter,额外的信息,一般不会有,有些特殊命令里面可能用到
-	Optstr string `protobuf:"bytes,11,opt,name=optstr,proto3" json:"optstr,omitempty"`
+	Optstr string `protobuf:"bytes,11,opt,name=Optstr,proto3" json:"Optstr,omitempty"`
 	// optional binary parameter,额外的信息,一般不会有,有些特殊命令里面可能用到
-	Optbin []byte `protobuf:"bytes,12,opt,name=optbin,proto3" json:"optbin,omitempty"`
-	// optional meta info,key=meta[i],value=meta[i+1]
-	Meta []string `protobuf:"bytes,13,rep,name=meta" json:"meta,omitempty"`
+	Optbin []byte `protobuf:"bytes,12,opt,name=Optbin,proto3" json:"Optbin,omitempty"`
+	// optional grpc meta
+	MetaInfo *Meta `protobuf:"bytes,13,opt,name=MetaInfo" json:"MetaInfo,omitempty"`
 }
 
 func (m *Ymsg) Reset()                    { *m = Ymsg{} }
@@ -133,9 +136,76 @@ func (m *Ymsg) GetOptbin() []byte {
 	return nil
 }
 
-func (m *Ymsg) GetMeta() []string {
+func (m *Ymsg) GetMetaInfo() *Meta {
 	if m != nil {
-		return m.Meta
+		return m.MetaInfo
+	}
+	return nil
+}
+
+// grpc meta data item
+type MetaItem struct {
+	Key  string   `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Vals []string `protobuf:"bytes,2,rep,name=vals" json:"vals,omitempty"`
+}
+
+func (m *MetaItem) Reset()                    { *m = MetaItem{} }
+func (m *MetaItem) String() string            { return proto.CompactTextString(m) }
+func (*MetaItem) ProtoMessage()               {}
+func (*MetaItem) Descriptor() ([]byte, []int) { return fileDescriptorYrpcmsg, []int{1} }
+
+func (m *MetaItem) GetKey() string {
+	if m != nil {
+		return m.Key
+	}
+	return ""
+}
+
+func (m *MetaItem) GetVals() []string {
+	if m != nil {
+		return m.Vals
+	}
+	return nil
+}
+
+// grpc meta
+type Meta struct {
+	Val []*MetaItem `protobuf:"bytes,1,rep,name=val" json:"val,omitempty"`
+}
+
+func (m *Meta) Reset()                    { *m = Meta{} }
+func (m *Meta) String() string            { return proto.CompactTextString(m) }
+func (*Meta) ProtoMessage()               {}
+func (*Meta) Descriptor() ([]byte, []int) { return fileDescriptorYrpcmsg, []int{2} }
+
+func (m *Meta) GetVal() []*MetaItem {
+	if m != nil {
+		return m.Val
+	}
+	return nil
+}
+
+// grpc Header Trailer meta
+type GrpcMeta struct {
+	Header  *Meta `protobuf:"bytes,1,opt,name=Header" json:"Header,omitempty"`
+	Trailer *Meta `protobuf:"bytes,2,opt,name=Trailer" json:"Trailer,omitempty"`
+}
+
+func (m *GrpcMeta) Reset()                    { *m = GrpcMeta{} }
+func (m *GrpcMeta) String() string            { return proto.CompactTextString(m) }
+func (*GrpcMeta) ProtoMessage()               {}
+func (*GrpcMeta) Descriptor() ([]byte, []int) { return fileDescriptorYrpcmsg, []int{3} }
+
+func (m *GrpcMeta) GetHeader() *Meta {
+	if m != nil {
+		return m.Header
+	}
+	return nil
+}
+
+func (m *GrpcMeta) GetTrailer() *Meta {
+	if m != nil {
+		return m.Trailer
 	}
 	return nil
 }
@@ -146,7 +216,7 @@ type Yempty struct {
 func (m *Yempty) Reset()                    { *m = Yempty{} }
 func (m *Yempty) String() string            { return proto.CompactTextString(m) }
 func (*Yempty) ProtoMessage()               {}
-func (*Yempty) Descriptor() ([]byte, []int) { return fileDescriptorYrpcmsg, []int{1} }
+func (*Yempty) Descriptor() ([]byte, []int) { return fileDescriptorYrpcmsg, []int{4} }
 
 // A generic nocare message that you can use to info the call is not important and no care the result.
 // A typical example is to use it in report log/trace. For instance:
@@ -161,19 +231,19 @@ type Ynocare struct {
 func (m *Ynocare) Reset()                    { *m = Ynocare{} }
 func (m *Ynocare) String() string            { return proto.CompactTextString(m) }
 func (*Ynocare) ProtoMessage()               {}
-func (*Ynocare) Descriptor() ([]byte, []int) { return fileDescriptorYrpcmsg, []int{2} }
+func (*Ynocare) Descriptor() ([]byte, []int) { return fileDescriptorYrpcmsg, []int{5} }
 
 type UnixTime struct {
 	// Unix time, the number of miliseconds elapsed since January 1, 1970 UTC
-	TimeUnix int64 `protobuf:"zigzag64,1,opt,name=time_unix,json=timeUnix,proto3" json:"time_unix,omitempty"`
+	TimeUnix int64 `protobuf:"zigzag64,1,opt,name=TimeUnix,proto3" json:"TimeUnix,omitempty"`
 	// utc time yyyy-MM-dd hh:mm:ss.zzz
-	TimeStr string `protobuf:"bytes,2,opt,name=time_str,json=timeStr,proto3" json:"time_str,omitempty"`
+	TimeStr string `protobuf:"bytes,2,opt,name=TimeStr,proto3" json:"TimeStr,omitempty"`
 }
 
 func (m *UnixTime) Reset()                    { *m = UnixTime{} }
 func (m *UnixTime) String() string            { return proto.CompactTextString(m) }
 func (*UnixTime) ProtoMessage()               {}
-func (*UnixTime) Descriptor() ([]byte, []int) { return fileDescriptorYrpcmsg, []int{3} }
+func (*UnixTime) Descriptor() ([]byte, []int) { return fileDescriptorYrpcmsg, []int{6} }
 
 func (m *UnixTime) GetTimeUnix() int64 {
 	if m != nil {
@@ -191,19 +261,19 @@ func (m *UnixTime) GetTimeStr() string {
 
 type NatsOption struct {
 	// original sid
-	OrigSid []byte `protobuf:"bytes,1,opt,name=orig_sid,json=origSid,proto3" json:"orig_sid,omitempty"`
+	OrigSid []byte `protobuf:"bytes,1,opt,name=OrigSid,proto3" json:"OrigSid,omitempty"`
 	// original cid
-	OrigCid uint32 `protobuf:"varint,2,opt,name=orig_cid,json=origCid,proto3" json:"orig_cid,omitempty"`
+	OrigCid uint32 `protobuf:"varint,2,opt,name=OrigCid,proto3" json:"OrigCid,omitempty"`
 	// nats replay
-	Reply string `protobuf:"bytes,3,opt,name=reply,proto3" json:"reply,omitempty"`
+	Reply string `protobuf:"bytes,3,opt,name=Reply,proto3" json:"Reply,omitempty"`
 	// optional binary parameters
-	Obin []byte `protobuf:"bytes,4,opt,name=obin,proto3" json:"obin,omitempty"`
+	Optbin []byte `protobuf:"bytes,4,opt,name=Optbin,proto3" json:"Optbin,omitempty"`
 }
 
 func (m *NatsOption) Reset()                    { *m = NatsOption{} }
 func (m *NatsOption) String() string            { return proto.CompactTextString(m) }
 func (*NatsOption) ProtoMessage()               {}
-func (*NatsOption) Descriptor() ([]byte, []int) { return fileDescriptorYrpcmsg, []int{4} }
+func (*NatsOption) Descriptor() ([]byte, []int) { return fileDescriptorYrpcmsg, []int{7} }
 
 func (m *NatsOption) GetOrigSid() []byte {
 	if m != nil {
@@ -226,15 +296,18 @@ func (m *NatsOption) GetReply() string {
 	return ""
 }
 
-func (m *NatsOption) GetObin() []byte {
+func (m *NatsOption) GetOptbin() []byte {
 	if m != nil {
-		return m.Obin
+		return m.Optbin
 	}
 	return nil
 }
 
 func init() {
 	proto.RegisterType((*Ymsg)(nil), "yrpcmsg.Ymsg")
+	proto.RegisterType((*MetaItem)(nil), "yrpcmsg.MetaItem")
+	proto.RegisterType((*Meta)(nil), "yrpcmsg.Meta")
+	proto.RegisterType((*GrpcMeta)(nil), "yrpcmsg.GrpcMeta")
 	proto.RegisterType((*Yempty)(nil), "yrpcmsg.Yempty")
 	proto.RegisterType((*Ynocare)(nil), "yrpcmsg.Ynocare")
 	proto.RegisterType((*UnixTime)(nil), "yrpcmsg.UnixTime")
@@ -306,9 +379,43 @@ func (m *Ymsg) MarshalTo(dAtA []byte) (int, error) {
 		i = encodeVarintYrpcmsg(dAtA, i, uint64(len(m.Optbin)))
 		i += copy(dAtA[i:], m.Optbin)
 	}
-	if len(m.Meta) > 0 {
-		for _, s := range m.Meta {
-			dAtA[i] = 0x6a
+	if m.MetaInfo != nil {
+		dAtA[i] = 0x6a
+		i++
+		i = encodeVarintYrpcmsg(dAtA, i, uint64(m.MetaInfo.Size()))
+		n1, err := m.MetaInfo.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n1
+	}
+	return i, nil
+}
+
+func (m *MetaItem) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MetaItem) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Key) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintYrpcmsg(dAtA, i, uint64(len(m.Key)))
+		i += copy(dAtA[i:], m.Key)
+	}
+	if len(m.Vals) > 0 {
+		for _, s := range m.Vals {
+			dAtA[i] = 0x12
 			i++
 			l = len(s)
 			for l >= 1<<7 {
@@ -320,6 +427,74 @@ func (m *Ymsg) MarshalTo(dAtA []byte) (int, error) {
 			i++
 			i += copy(dAtA[i:], s)
 		}
+	}
+	return i, nil
+}
+
+func (m *Meta) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Meta) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Val) > 0 {
+		for _, msg := range m.Val {
+			dAtA[i] = 0xa
+			i++
+			i = encodeVarintYrpcmsg(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
+func (m *GrpcMeta) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GrpcMeta) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Header != nil {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintYrpcmsg(dAtA, i, uint64(m.Header.Size()))
+		n2, err := m.Header.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n2
+	}
+	if m.Trailer != nil {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintYrpcmsg(dAtA, i, uint64(m.Trailer.Size()))
+		n3, err := m.Trailer.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n3
 	}
 	return i, nil
 }
@@ -421,11 +596,11 @@ func (m *NatsOption) MarshalTo(dAtA []byte) (int, error) {
 		i = encodeVarintYrpcmsg(dAtA, i, uint64(len(m.Reply)))
 		i += copy(dAtA[i:], m.Reply)
 	}
-	if len(m.Obin) > 0 {
+	if len(m.Optbin) > 0 {
 		dAtA[i] = 0x22
 		i++
-		i = encodeVarintYrpcmsg(dAtA, i, uint64(len(m.Obin)))
-		i += copy(dAtA[i:], m.Obin)
+		i = encodeVarintYrpcmsg(dAtA, i, uint64(len(m.Optbin)))
+		i += copy(dAtA[i:], m.Optbin)
 	}
 	return i, nil
 }
@@ -473,11 +648,51 @@ func (m *Ymsg) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovYrpcmsg(uint64(l))
 	}
-	if len(m.Meta) > 0 {
-		for _, s := range m.Meta {
+	if m.MetaInfo != nil {
+		l = m.MetaInfo.Size()
+		n += 1 + l + sovYrpcmsg(uint64(l))
+	}
+	return n
+}
+
+func (m *MetaItem) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Key)
+	if l > 0 {
+		n += 1 + l + sovYrpcmsg(uint64(l))
+	}
+	if len(m.Vals) > 0 {
+		for _, s := range m.Vals {
 			l = len(s)
 			n += 1 + l + sovYrpcmsg(uint64(l))
 		}
+	}
+	return n
+}
+
+func (m *Meta) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.Val) > 0 {
+		for _, e := range m.Val {
+			l = e.Size()
+			n += 1 + l + sovYrpcmsg(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *GrpcMeta) Size() (n int) {
+	var l int
+	_ = l
+	if m.Header != nil {
+		l = m.Header.Size()
+		n += 1 + l + sovYrpcmsg(uint64(l))
+	}
+	if m.Trailer != nil {
+		l = m.Trailer.Size()
+		n += 1 + l + sovYrpcmsg(uint64(l))
 	}
 	return n
 }
@@ -521,7 +736,7 @@ func (m *NatsOption) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovYrpcmsg(uint64(l))
 	}
-	l = len(m.Obin)
+	l = len(m.Optbin)
 	if l > 0 {
 		n += 1 + l + sovYrpcmsg(uint64(l))
 	}
@@ -773,7 +988,90 @@ func (m *Ymsg) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 13:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Meta", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field MetaInfo", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowYrpcmsg
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthYrpcmsg
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.MetaInfo == nil {
+				m.MetaInfo = &Meta{}
+			}
+			if err := m.MetaInfo.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipYrpcmsg(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthYrpcmsg
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MetaItem) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowYrpcmsg
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MetaItem: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MetaItem: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -798,7 +1096,233 @@ func (m *Ymsg) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Meta = append(m.Meta, string(dAtA[iNdEx:postIndex]))
+			m.Key = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Vals", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowYrpcmsg
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthYrpcmsg
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Vals = append(m.Vals, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipYrpcmsg(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthYrpcmsg
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Meta) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowYrpcmsg
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Meta: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Meta: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Val", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowYrpcmsg
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthYrpcmsg
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Val = append(m.Val, &MetaItem{})
+			if err := m.Val[len(m.Val)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipYrpcmsg(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthYrpcmsg
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GrpcMeta) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowYrpcmsg
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GrpcMeta: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GrpcMeta: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowYrpcmsg
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthYrpcmsg
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Header == nil {
+				m.Header = &Meta{}
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Trailer", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowYrpcmsg
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthYrpcmsg
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Trailer == nil {
+				m.Trailer = &Meta{}
+			}
+			if err := m.Trailer.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -1131,7 +1655,7 @@ func (m *NatsOption) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Obin", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Optbin", wireType)
 			}
 			var byteLen int
 			for shift := uint(0); ; shift += 7 {
@@ -1155,9 +1679,9 @@ func (m *NatsOption) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Obin = append(m.Obin[:0], dAtA[iNdEx:postIndex]...)
-			if m.Obin == nil {
-				m.Obin = []byte{}
+			m.Optbin = append(m.Optbin[:0], dAtA[iNdEx:postIndex]...)
+			if m.Optbin == nil {
+				m.Optbin = []byte{}
 			}
 			iNdEx = postIndex
 		default:
@@ -1289,27 +1813,33 @@ var (
 func init() { proto.RegisterFile("yrpcmsg.proto", fileDescriptorYrpcmsg) }
 
 var fileDescriptorYrpcmsg = []byte{
-	// 351 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x3c, 0x91, 0xd1, 0x4a, 0xc3, 0x30,
-	0x14, 0x86, 0x4d, 0xdb, 0xad, 0x6b, 0xdc, 0x44, 0x83, 0x48, 0x44, 0x28, 0xa5, 0x57, 0xbd, 0xda,
-	0x40, 0xdf, 0x60, 0xde, 0x78, 0xa5, 0x90, 0xe9, 0xc5, 0xbc, 0x19, 0x6d, 0x13, 0x6a, 0x64, 0x49,
-	0x4a, 0x9a, 0xc1, 0xfa, 0x16, 0x3e, 0xd6, 0x2e, 0x7d, 0x04, 0x99, 0x2f, 0x22, 0x27, 0x2b, 0xde,
-	0x7d, 0xff, 0x9f, 0x9f, 0x70, 0xce, 0x7f, 0xf0, 0xac, 0xb7, 0x6d, 0xad, 0xba, 0x66, 0xde, 0x5a,
-	0xe3, 0x0c, 0x89, 0x07, 0x99, 0x1f, 0x10, 0x8e, 0xd6, 0xaa, 0x6b, 0xc8, 0x25, 0x0e, 0xb7, 0x42,
-	0x53, 0x94, 0xa1, 0x22, 0x66, 0x80, 0xe0, 0xd4, 0x8a, 0xd3, 0xe0, 0xe4, 0xd4, 0x8a, 0x83, 0xd3,
-	0x49, 0x4e, 0xc3, 0x0c, 0x15, 0x53, 0x06, 0xe8, 0x33, 0x92, 0xd3, 0x28, 0x43, 0xc5, 0x8c, 0x01,
-	0x92, 0x0b, 0x1c, 0x68, 0x43, 0x47, 0xde, 0x08, 0xb4, 0x81, 0x84, 0x15, 0x1d, 0x4d, 0x32, 0x54,
-	0x5c, 0x31, 0x40, 0x42, 0x70, 0x54, 0x19, 0xde, 0x53, 0xec, 0xbf, 0xf1, 0x4c, 0x6e, 0xf0, 0xd8,
-	0xb4, 0xae, 0x73, 0x96, 0x9e, 0x67, 0xa8, 0x48, 0xd8, 0xa0, 0x06, 0xbf, 0x92, 0x9a, 0x4e, 0x7d,
-	0x7a, 0x50, 0xf0, 0x87, 0x12, 0xae, 0xa4, 0xb3, 0x2c, 0x2c, 0x12, 0xe6, 0x39, 0x9f, 0xe0, 0xf1,
-	0x5a, 0xa8, 0xd6, 0xf5, 0x79, 0x82, 0xe3, 0xb5, 0x36, 0x75, 0x69, 0x45, 0xbe, 0xc4, 0x93, 0x37,
-	0x2d, 0xf7, 0xaf, 0x52, 0x09, 0x72, 0x87, 0x13, 0x27, 0x95, 0xd8, 0xec, 0xb4, 0xdc, 0xfb, 0x45,
-	0x09, 0x9b, 0x80, 0x01, 0x01, 0x72, 0x8b, 0x3d, 0x6f, 0x60, 0x86, 0xc0, 0xcf, 0x10, 0x83, 0x5e,
-	0x39, 0x9b, 0x6f, 0x31, 0x7e, 0x2e, 0x5d, 0xf7, 0xd2, 0x3a, 0x69, 0x34, 0x04, 0x8d, 0x95, 0xcd,
-	0x06, 0x9a, 0x40, 0x7e, 0xa8, 0x18, 0xf4, 0x4a, 0xf2, 0xff, 0x27, 0xa8, 0x24, 0xf0, 0x0d, 0xf8,
-	0xa7, 0x47, 0xc9, 0xc9, 0x35, 0x1e, 0x59, 0xd1, 0x6e, 0x7b, 0x5f, 0x5e, 0xc2, 0x4e, 0x02, 0xd6,
-	0x30, 0xb0, 0x5c, 0x74, 0xaa, 0x02, 0x78, 0x79, 0x7f, 0x38, 0xa6, 0xe8, 0xfb, 0x98, 0xa2, 0x9f,
-	0x63, 0x8a, 0xbe, 0x7e, 0xd3, 0xb3, 0xa7, 0xf0, 0x3d, 0x6d, 0xa4, 0xfb, 0xd8, 0x55, 0xf3, 0xda,
-	0xa8, 0x45, 0x5f, 0xea, 0xe6, 0x73, 0xa7, 0x6b, 0xc3, 0xc5, 0x62, 0xb8, 0x62, 0x35, 0xf6, 0x57,
-	0x7d, 0xf8, 0x0b, 0x00, 0x00, 0xff, 0xff, 0x80, 0x03, 0x1d, 0x09, 0xe6, 0x01, 0x00, 0x00,
+	// 443 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x64, 0x52, 0xc1, 0x6e, 0xd4, 0x30,
+	0x10, 0xc5, 0x49, 0xba, 0x49, 0x66, 0xbb, 0x88, 0x5a, 0x08, 0x59, 0x1c, 0xa2, 0x28, 0x08, 0x11,
+	0x84, 0xb4, 0x45, 0xcb, 0x0f, 0xa0, 0xf6, 0x40, 0x91, 0x60, 0x57, 0x72, 0xcb, 0x61, 0x7b, 0xcb,
+	0x26, 0x26, 0x18, 0x36, 0x76, 0xe4, 0xb8, 0x15, 0xf9, 0x0b, 0x3e, 0x8b, 0x23, 0x7f, 0x00, 0x5a,
+	0x7e, 0x04, 0x8d, 0x37, 0xa9, 0x8a, 0xf6, 0xe4, 0xf7, 0xe6, 0x3d, 0xcf, 0x8c, 0x67, 0x0c, 0xb3,
+	0xde, 0xb4, 0x65, 0xd3, 0xd5, 0xf3, 0xd6, 0x68, 0xab, 0x69, 0x38, 0xd0, 0xec, 0x37, 0x81, 0x60,
+	0xdd, 0x74, 0x35, 0x7d, 0x04, 0xfe, 0x07, 0xa1, 0x18, 0x49, 0x49, 0x1e, 0x72, 0x84, 0x18, 0x39,
+	0x6f, 0x2a, 0xe6, 0xed, 0x23, 0xe7, 0x4d, 0x85, 0x91, 0x4b, 0x59, 0x31, 0x3f, 0x25, 0xf9, 0x31,
+	0x47, 0xe8, 0x3c, 0xb2, 0x62, 0x41, 0x4a, 0xf2, 0x19, 0x47, 0x48, 0x1f, 0x82, 0xb7, 0xd4, 0xec,
+	0xc8, 0x05, 0xbc, 0xa5, 0x46, 0x07, 0x17, 0x1d, 0x8b, 0x53, 0x92, 0x9f, 0x70, 0x84, 0x94, 0x42,
+	0x70, 0xa6, 0xab, 0x9e, 0x81, 0x4b, 0xe3, 0x30, 0x7d, 0x02, 0x93, 0x55, 0x6b, 0x3b, 0x6b, 0xd8,
+	0x34, 0x25, 0x79, 0xcc, 0x07, 0x36, 0xc4, 0x37, 0x52, 0xb1, 0x63, 0xe7, 0x1e, 0x18, 0x7d, 0x09,
+	0xd1, 0x47, 0x61, 0x8b, 0xf7, 0xea, 0xb3, 0x66, 0xb3, 0x94, 0xe4, 0xd3, 0xc5, 0x6c, 0x3e, 0xbe,
+	0x10, 0x05, 0x7e, 0x27, 0x67, 0xaf, 0x07, 0xab, 0x15, 0x0d, 0x36, 0xf3, 0x4d, 0xf4, 0xee, 0x91,
+	0x31, 0x47, 0x88, 0xcd, 0xdc, 0x16, 0xdb, 0x8e, 0x79, 0xa9, 0x9f, 0xc7, 0xdc, 0xe1, 0xec, 0x15,
+	0x04, 0x78, 0x83, 0x3e, 0x03, 0xff, 0xb6, 0xd8, 0x32, 0x92, 0xfa, 0xf9, 0x74, 0x71, 0xf2, 0x5f,
+	0x7e, 0xcc, 0xc6, 0x51, 0xcd, 0xae, 0x21, 0x7a, 0x67, 0xda, 0xd2, 0x5d, 0x78, 0x0e, 0x93, 0x0b,
+	0x51, 0x54, 0xc2, 0xb8, 0x0a, 0x07, 0x3d, 0x0d, 0x22, 0x7d, 0x01, 0xe1, 0x95, 0x29, 0xe4, 0x56,
+	0x18, 0x37, 0xdc, 0x03, 0xdf, 0xa8, 0x66, 0x11, 0x4c, 0xd6, 0xa2, 0x69, 0x6d, 0x9f, 0xc5, 0x10,
+	0xae, 0x95, 0x2e, 0x0b, 0x23, 0xb2, 0xb7, 0x10, 0x7d, 0x52, 0xf2, 0xfb, 0x95, 0x6c, 0x04, 0x7d,
+	0x0a, 0x11, 0x9e, 0xc8, 0x5d, 0x49, 0xca, 0xef, 0x38, 0x65, 0x10, 0x22, 0xbe, 0xb4, 0xfb, 0x2a,
+	0x31, 0x1f, 0x69, 0xa6, 0x00, 0x96, 0x85, 0xed, 0x56, 0xad, 0x95, 0x5a, 0xa1, 0x6f, 0x65, 0x64,
+	0x8d, 0x8b, 0x25, 0x6e, 0xc6, 0x23, 0x1d, 0x15, 0x5c, 0xb0, 0xe7, 0xf6, 0x39, 0x52, 0xfa, 0x18,
+	0x8e, 0xb8, 0x68, 0xb7, 0xbd, 0xfb, 0x0a, 0x31, 0xdf, 0x93, 0x7b, 0xcb, 0x0a, 0xee, 0x2f, 0xeb,
+	0x6c, 0xf1, 0x73, 0x97, 0x90, 0x5f, 0xbb, 0x84, 0xfc, 0xd9, 0x25, 0xe4, 0xc7, 0xdf, 0xe4, 0xc1,
+	0x85, 0x7f, 0x9d, 0xd4, 0xd2, 0x7e, 0xb9, 0xd9, 0xcc, 0x4b, 0xdd, 0x9c, 0xf6, 0x85, 0xaa, 0xbf,
+	0xde, 0xa8, 0x52, 0x57, 0xe2, 0x74, 0x18, 0xc4, 0x66, 0xe2, 0xfe, 0xe9, 0x9b, 0x7f, 0x01, 0x00,
+	0x00, 0xff, 0xff, 0x17, 0x97, 0x4a, 0x3f, 0xb8, 0x02, 0x00, 0x00,
 }
