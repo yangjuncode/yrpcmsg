@@ -9,3 +9,5 @@ rm yrpcmsg.pb.go
 protoc --gogofaster_out=. yrpcmsg.proto
 mv github.com/yangjuncode/yrpcmsg/yrpcmsg.pb.go .
 rm -rf github.com
+
+echo -e "import { Long } from 'protobufjs'\n$(cat dist/index.d.ts)" > dist/index.d.ts

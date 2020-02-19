@@ -218,8 +218,9 @@ func (m *Yempty) String() string            { return proto.CompactTextString(m) 
 func (*Yempty) ProtoMessage()               {}
 func (*Yempty) Descriptor() ([]byte, []int) { return fileDescriptorYrpcmsg, []int{4} }
 
-// A generic nocare message that you can use to info the call is not important and no care the result.
-// A typical example is to use it in report log/trace. For instance:
+// A generic nocare message that you can use to info the call is not important
+// and no care the result. A typical example is to use it in report log/trace.
+// For instance:
 //
 //     service Log {
 //       rpc Log(infos) returns (yrpc.Ynocare);

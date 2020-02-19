@@ -20,11 +20,11 @@ message Ymsg {
   // b31-b24: not used
   fixed32 Cmd = 2;
 
-  //session id，登录后一定会有,用于后台区分不同的用户请求
+  // session id，登录后一定会有,用于后台区分不同的用户请求
   bytes Sid = 3;
 
-  //rpc call id,给分辨不同的rpc调用使用,调用方增1循环使用
-  uint32 Cid=4;
+  // rpc call id,给分辨不同的rpc调用使用,调用方增1循环使用
+  uint32 Cid = 4;
 
   // rpc no,从0开始增1使用,用于区分收到重复的包,特别是udp的情况下
   uint32 No = 5;
@@ -41,27 +41,24 @@ message Ymsg {
   // optional binary parameter,额外的信息,一般不会有,有些特殊命令里面可能用到
   bytes Optbin = 12;
 
-  //optional grpc meta
-   Meta MetaInfo=13;
+  // optional grpc meta
+  Meta MetaInfo = 13;
 };
 
-//grpc meta data item
+// grpc meta data item
 message MetaItem {
   string key = 1;
   repeated string vals = 2;
 }
 
-//grpc meta
-message Meta {
-  repeated MetaItem val=1;
-}
+// grpc meta
+message Meta { repeated MetaItem val = 1; }
 
-//grpc Header Trailer meta
+// grpc Header Trailer meta
 message GrpcMeta {
-  Meta Header=1;
-  Meta Trailer=2;
+  Meta Header = 1;
+  Meta Trailer = 2;
 }
-
 
 // A generic empty message that you can re-use to avoid defining duplicated
 // empty messages in your APIs. A typical example is to use it as the request
@@ -72,37 +69,33 @@ message GrpcMeta {
 //     }
 //
 
-message Yempty {
+message Yempty {}
 
-}
-
-// A generic nocare message that you can use to info the call is not important and no care the result. 
-// A typical example is to use it in report log/trace. For instance:
+// A generic nocare message that you can use to info the call is not important
+// and no care the result. A typical example is to use it in report log/trace.
+// For instance:
 //
 //     service Log {
 //       rpc Log(infos) returns (yrpc.Ynocare);
 //     }
 //
-message Ynocare {
-
-}
+message Ynocare {}
 
 message UnixTime {
   // Unix time, the number of miliseconds elapsed since January 1, 1970 UTC
   sint64 TimeUnix = 1;
-  //utc time yyyy-MM-dd hh:mm:ss.zzz
+  // utc time yyyy-MM-dd hh:mm:ss.zzz
   string TimeStr = 2;
 }
 
 message NatsOption {
-    //original sid
-    bytes OrigSid = 1;
-    //original cid
-    uint32 OrigCid=2;
+  // original sid
+  bytes OrigSid = 1;
+  // original cid
+  uint32 OrigCid = 2;
 
-    //nats replay
-    string Reply = 3;
-    //optional binary parameters
-    bytes Optbin = 4;
-
+  // nats replay
+  string Reply = 3;
+  // optional binary parameters
+  bytes Optbin = 4;
 }
