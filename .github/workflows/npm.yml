@@ -13,7 +13,7 @@ jobs:
     - name: Use Node.js 
       uses: actions/setup-node@v1
       with:
-        node-version: 12.x
+        node-version: 12
     - run: yarn install
     - run: mkdir -p dist
     - run: pbjs --no-create --no-verify --no-convert --no-delimited --force-long   -t static-module -w es6 -o dist/index.js yrpcmsg.proto
