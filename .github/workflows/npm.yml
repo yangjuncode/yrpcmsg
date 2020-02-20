@@ -1,0 +1,31 @@
+name: publish to npm
+
+on:
+  create:
+    tags:
+      - v*.*.*
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [12.x]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - run: yarn install
+    - run: mkdir -p dist
+    - run: pbjs --no-create --no-verify --no-convert --no-delimited --force-long   -t static-module -w es6 -o dist/index.js yrpcmsg.proto
+    - run: pbts -o dist/index.d.ts dist/index.js
+    - run: echo -e "import { Long } from 'protobufjs'\n$(cat dist/index.d.ts)" > dist/index.d.ts
+    - run: yarn publish
+      env:
+        CI: true
+        NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
