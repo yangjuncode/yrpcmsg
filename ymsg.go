@@ -51,6 +51,10 @@ func (this *Ymsg) GrpcMeta() metadata.MD {
 func GrpcMD2YrpcMeta(md metadata.MD) Meta {
 	m := Meta{}
 	for key, vals := range md {
+		if key == "content-type" {
+			//no need this item
+			continue
+		}
 		mi := &MetaItem{
 			Key:  key,
 			Vals: vals,
