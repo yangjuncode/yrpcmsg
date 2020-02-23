@@ -46,3 +46,28 @@ func (this *Ymsg) GrpcMeta() metadata.MD {
 
 	return md
 }
+
+//metadata.MD to yrpcmsg.meta
+func GrpcMD2YrpcMeta(md metadata.MD) Meta {
+	m := Meta{}
+	for key, vals := range md {
+		mi := &MetaItem{
+			Key:  key,
+			Vals: vals,
+		}
+		m.Val = append(m.Val, mi)
+	}
+
+	return m
+}
+
+//yrpcmsg.meta to metadata.MD
+func YrpcMeta2GrpcMD(meta *Meta) metadata.MD {
+	md := metadata.MD{}
+
+	for _, metaItem := range meta.Val {
+		md.Set(metaItem.Key, metaItem.Vals...)
+	}
+
+	return md
+}
