@@ -87,15 +87,3 @@ message UnixTime {
   // utc time yyyy-MM-dd hh:mm:ss.zzz
   string TimeStr = 2;
 }
-
-message NatsOption {
-  // original sid
-  bytes OrigSid = 1;
-  // original cid
-  uint32 OrigCid = 2;
-
-  // nats replay
-  string Reply = 3;
-  // optional binary parameters
-  bytes Optbin = 4;
-}
