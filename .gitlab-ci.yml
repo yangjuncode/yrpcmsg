@@ -1,6 +1,5 @@
 before_script:
   - export PATH=$PATH:/home/yj/go/bin
-  - export which protoc-gen-gogofaster
 
 stages:
   - build
