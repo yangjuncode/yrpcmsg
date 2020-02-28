@@ -1,0 +1,40 @@
+before_script:
+  - export PATH=$PATH:/home/yj/go/bin
+
+stages:
+  - build
+  - deploy
+
+compile:
+  stage: build
+  tags:
+    - 10.20.30.5
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+  cache:
+    key: $CI_PROJECT_NAME.ykit
+    paths:
+      - node_modules/
+
+  script:
+    - yarn
+    - yarn build
+
+
+deploy:
+  stage: deploy
+  tags:
+    - 10.20.30.5
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "master"'
+      changes:
+        - package.json
+  cache:
+    key: $CI_PROJECT_NAME.ykit
+    paths:
+      - node_modules/
+  script:
+    - echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}'>.npmrc
+    - export myverion=$(node -p "require('./package.json').version")
+    - export npmversion=$(npm show yrpcmsg version)
+    - if [ "$myversion" != "$npmversion" ]; then yarn ; yarn build; npm publish --access public; fi
