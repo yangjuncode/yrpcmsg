@@ -35,6 +35,6 @@ deploy:
       - node_modules/
   script:
     - echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}'>.npmrc
-    - export myverion=$(node -p "require('./package.json').version")
+    - export myversion=$(node -p "require('./package.json').version")
     - export npmversion=$(npm show yrpcmsg version)
     - if [ "$myversion" != "$npmversion" ]; then yarn ; yarn build; npm publish --access public; fi
